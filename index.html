@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus Copilot - AI Employee Assistant</title>
+  <meta name="description" content="Nexus Copilot is a premium AI Employee Copilot that automates repetitive administrative tasks, drafts emails, parses meeting minutes, and handles kanban tasks.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <!-- Animated Background Glow Blobs -->
+  <div class="glow-blob blob-1"></div>
+  <div class="glow-blob blob-2"></div>
+  <div class="glow-blob blob-3"></div>
+
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo-icon">
+          <i data-lucide="zap" class="icon-brand"></i>
+        </div>
+        <span class="brand-name">Nexus Copilot</span>
+      </div>
+      
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="dashboard" id="nav-dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-tab="chat" id="nav-chat">
+          <i data-lucide="message-square"></i>
+          <span>AI Chat Assistant</span>
+        </button>
+        <button class="nav-item" data-tab="drafts" id="nav-drafts">
+          <i data-lucide="mail-warning"></i>
+          <span>Smart Drafts</span>
+        </button>
+        <button class="nav-item" data-tab="docgen" id="nav-docgen">
+          <i data-lucide="file-text"></i>
+          <span>Doc Generator</span>
+        </button>
+        <button class="nav-item" data-tab="kanban" id="nav-kanban">
+          <i data-lucide="kanban-square"></i>
+          <span>Task Board</span>
+        </button>
+        <button class="nav-item" data-tab="mom" id="nav-mom">
+          <i data-lucide="mic"></i>
+          <span>Minutes Extractor</span>
+        </button>
+        <button class="nav-item" data-tab="support" id="nav-support">
+          <i data-lucide="headphones"></i>
+          <span>Customer Support</span>
+        </button>
+        <button class="nav-item" data-tab="knowledge" id="nav-knowledge">
+          <i data-lucide="book-open"></i>
+          <span>Knowledge Base</span>
+        </button>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <button class="settings-btn" id="open-settings-btn">
+          <i data-lucide="settings"></i>
+          <span>Settings & APIs</span>
+        </button>
+      </div>
+    </aside>
+    
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-search-container">
+          <div class="header-search">
+            <i data-lucide="search"></i>
+            <input type="text" id="global-search" placeholder="Search workspace, tasks, tabs...">
+          </div>
+          <div class="search-results-dropdown" id="search-results"></div>
+        </div>
+        
+        <div class="header-actions">
+          <div class="header-clock" id="header-clock">
+            <i data-lucide="clock"></i>
+            <span id="clock-time">00:00:00</span>
+            <span class="clock-divider">|</span>
+            <span id="clock-date">Loading...</span>
+          </div>
+          <div class="api-status-badge key-configured" id="api-status">
+            <span class="status-dot"></span>
+            <span class="status-text">Simulated Mode</span>
+          </div>
+          <div class="user-profile">
+            <div class="avatar">BK</div>
+            <span class="user-name">B Karthik</span>
+          </div>
+        </div>
+      </header>
+      
+      <!-- Views Container -->
+      <div class="view-wrapper">
+        
+        <!-- 1. DASHBOARD VIEW -->
+        <section class="view-panel active" id="view-dashboard">
+          <div class="welcome-banner">
+            <h1>Welcome back, <span class="highlight">Karthik</span>!</h1>
+            <p>Your AI Employee Copilot is running. Ready to automate your administrative tasks and optimize operations.</p>
+          </div>
+          
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-icon blue"><i data-lucide="clock"></i></div>
+              <div class="metric-info">
+                <h3>Estimated Time Saved</h3>
+                <p class="metric-value" id="metric-time-saved">12.5 hrs</p>
+                <span class="metric-sub" id="metric-time-saved-sub">+2.3 hrs this week</span>
+              </div>
+            </div>
+            
+            <div class="metric-card">
+              <div class="metric-icon purple"><i data-lucide="sparkles"></i></div>
+              <div class="metric-info">
+                <h3>AI Tasks Executed</h3>
+                <p class="metric-value" id="metric-tasks-executed">48</p>
+                <span class="metric-sub">99.4% success rate</span>
+              </div>
+            </div>
+            
+            <div class="metric-card">
+              <div class="metric-icon green"><i data-lucide="check-square"></i></div>
+              <div class="metric-info">
+                <h3>Active Automations</h3>
+                <p class="metric-value" id="metric-automations">5</p>
+                <span class="metric-sub" id="metric-automations-sub">Across 3 departments</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="dashboard-main-grid">
+            <div class="dashboard-card latest-activity">
+              <h2>Quick Actions & Automations</h2>
+              <div class="quick-actions-grid">
+                <button class="quick-action-btn" data-action="go-chat">
+                  <i data-lucide="message-circle"></i>
+                  <h4>Ask Copilot</h4>
+                  <p>Query information or get help with workspace planning</p>
+                </button>
+                <button class="quick-action-btn" data-action="go-drafts">
+                  <i data-lucide="send"></i>
+                  <h4>Draft Email</h4>
+                  <p>Draft response letters, updates, or status reports</p>
+                </button>
+                <button class="quick-action-btn" data-action="go-docgen">
+                  <i data-lucide="file-plus"></i>
+                  <h4>Create Doc</h4>
+                  <p>Instantly generate professional invoices or proposals</p>
+                </button>
+                <button class="quick-action-btn" data-action="go-mom">
+                  <i data-lucide="file-output"></i>
+                  <h4>Extract Minutes</h4>
+                  <p>Parse transcripts into clean meeting reports</p>
+                </button>
+              </div>
+            </div>
+            
+            <div class="dashboard-card info-card">
+              <h2>Active System Configuration</h2>
+              <div class="info-body">
+                <div class="info-row">
+                  <span class="info-label">Active Workspace:</span>
+                  <span class="info-val">Hackthon_2026</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Coping Focus:</span>
+                  <span class="info-val">AI Automation & Intelligent Agents</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Model Selection:</span>
+                  <span class="info-val font-code" id="active-model-display">gemini-2.5-flash</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Mode Status:</span>
+                  <span class="info-val highlight-green" id="active-mode-display">Simulation (Keyless)</span>
+                </div>
+                <div class="setup-tip-box" id="setup-tip-box">
+                  <i data-lucide="help-circle"></i>
+                  <p>You are running in keyless simulation mode. To enable real live LLM generations, add your API key via the Settings button in the sidebar footer.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Personalization AI Insights Card (full width) -->
+          <div class="dashboard-card personalization-card" id="personalization-insights">
+            <h2><i data-lucide="brain-circuit" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:8px;color:var(--accent-primary)"></i>AI Personalization Engine</h2>
+            <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Smart suggestions tailored to your recent activity and workflows.</p>
+            <div class="personalization-chips" id="personalization-chips">
+              <div class="p-chip" data-action="go-chat" data-prefill="Summarize my pending tasks for today">
+                <i data-lucide="list-checks"></i>
+                <span>Summarize today's tasks</span>
+              </div>
+              <div class="p-chip" data-action="go-docgen">
+                <i data-lucide="file-text"></i>
+                <span>Generate a weekly report</span>
+              </div>
+              <div class="p-chip" data-action="go-drafts">
+                <i data-lucide="mail"></i>
+                <span>Draft a status update email</span>
+              </div>
+              <div class="p-chip" data-action="go-support">
+                <i data-lucide="headphones"></i>
+                <span>Handle customer query</span>
+              </div>
+              <div class="p-chip" data-action="go-chat" data-prefill="What are the best practices for onboarding new employees?">
+                <i data-lucide="users"></i>
+                <span>HR onboarding tips</span>
+              </div>
+              <div class="p-chip" data-action="go-mom">
+                <i data-lucide="mic"></i>
+                <span>Extract meeting minutes</span>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 2. AI CHAT ASSISTANT VIEW -->
+        <section class="view-panel" id="view-chat">
+          <div class="view-header">
+            <div>
+              <h2>AI Chat Assistant</h2>
+              <p>Discuss schedules, brainstorm proposals, or troubleshoot office procedures.</p>
+            </div>
+          </div>
+          
+          <div class="chat-layout">
+            <div class="chat-sidebar">
+              <div class="chat-config-group">
+                <label>Copilot Persona</label>
+                <div class="persona-options">
+                  <label class="persona-opt active">
+                    <input type="radio" name="chat-persona" value="general" checked>
+                    <div class="persona-opt-card">
+                      <i data-lucide="bot"></i>
+                      <div>
+                        <h5>General Copilot</h5>
+                        <p>All-round office aid</p>
+                      </div>
+                    </div>
+                  </label>
+                  <label class="persona-opt">
+                    <input type="radio" name="chat-persona" value="admin">
+                    <div class="persona-opt-card">
+                      <i data-lucide="user-cog"></i>
+                      <div>
+                        <h5>Admin Assistant</h5>
+                        <p>Scheduling & memos</p>
+                      </div>
+                    </div>
+                  </label>
+                  <label class="persona-opt">
+                    <input type="radio" name="chat-persona" value="writer">
+                    <div class="persona-opt-card">
+                      <i data-lucide="pen-tool"></i>
+                      <div>
+                        <h5>Senior Writer</h5>
+                        <p>Reports & grammar</p>
+                      </div>
+                    </div>
+                  </label>
+                  <label class="persona-opt">
+                    <input type="radio" name="chat-persona" value="analyst">
+                    <div class="persona-opt-card">
+                      <i data-lucide="bar-chart-2"></i>
+                      <div>
+                        <h5>Operations Analyst</h5>
+                        <p>Data & summaries</p>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              
+              <div class="chat-config-group">
+                <label>Quick Prompt Templates</label>
+                <div class="prompt-templates">
+                  <button class="template-chip" data-prompt="Draft a weekly summary email for our marketing goals.">Weekly Marketing Summary</button>
+                  <button class="template-chip" data-prompt="How do I set up aNet-30 payment term invoice?">Invoice Net-30 Help</button>
+                  <button class="template-chip" data-prompt="Create a brief project checklist for launching our app.">Project Launch Checklist</button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="chat-container">
+              <div class="chat-history" id="chat-history-box">
+                <!-- Chat messages loaded dynamically -->
+                <div class="chat-msg system">
+                  <div class="msg-avatar"><i data-lucide="bot"></i></div>
+                  <div class="msg-content">
+                    <p>Hello! I am your AI Employee Copilot. How can I assist you with your administrative tasks, emails, scheduling, or documentation today?</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="chat-input-bar">
+                <textarea placeholder="Type your instruction or question (e.g. Draft a notification letter)..." id="chat-input-text"></textarea>
+                <button class="chat-send-btn" id="chat-send-btn">
+                  <i data-lucide="send"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 3. SMART DRAFTS VIEW -->
+        <section class="view-panel" id="view-drafts">
+          <div class="view-header">
+            <div>
+              <h2>Smart Drafts</h2>
+              <p>Quickly generate high-quality communication drafts, replies, announcements, or warning letters.</p>
+            </div>
+          </div>
+          
+          <div class="split-layout">
+            <div class="panel-form">
+              <div class="form-group">
+                <label for="draft-type">Draft Category</label>
+                <select id="draft-type" class="custom-select">
+                  <option value="email">Formal Email Response</option>
+                  <option value="announcement">Internal Team Announcement</option>
+                  <option value="warning">Reminder / Alert Notice</option>
+                  <option value="memo">Operational memo</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="draft-tone">Message Tone</label>
+                <select id="draft-tone" class="custom-select">
+                  <option value="professional">Professional & Structured</option>
+                  <option value="empathetic">Empathetic & Supportive</option>
+                  <option value="direct">Direct & Concise</option>
+                  <option value="urgent">Urgent & Direct (Deadline focus)</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="draft-details">Key Context / Details</label>
+                <textarea id="draft-details" placeholder="Describe what the draft should convey (e.g. project delay due to backend bugs, request review by Tuesday afternoon)..." rows="6"></textarea>
+              </div>
+              
+              <button class="btn btn-primary" id="generate-draft-btn">
+                <i data-lucide="wand-2"></i>
+                <span>Generate Communication Draft</span>
+              </button>
+            </div>
+            
+            <div class="panel-preview">
+              <div class="preview-header">
+                <h3>Live Draft Output</h3>
+                <button class="btn-copy" id="copy-draft-btn">
+                  <i data-lucide="copy"></i>
+                  <span>Copy</span>
+                </button>
+              </div>
+              <div class="preview-content-box" id="draft-output-box">
+                <p class="placeholder-text">Generated communication drafts will display here. Fill in details and click "Generate".</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 4. DOC GENERATOR VIEW -->
+        <section class="view-panel" id="view-docgen">
+          <div class="view-header">
+            <div>
+              <h2>Document Generator</h2>
+              <p>Create clean, formatted business documentation ready to copy or download.</p>
+            </div>
+          </div>
+          
+          <div class="split-layout">
+            <div class="panel-form">
+              <div class="form-group">
+                <label for="doc-type">Document Type</label>
+                <select id="doc-type" class="custom-select">
+                  <option value="proposal">Project Proposal / Outline</option>
+                  <option value="invoice">Services Invoice (Mock-billing)</option>
+                  <option value="report">Weekly Progress Report</option>
+                  <option value="ppt">PowerPoint (PPT) Outline / Slides</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="doc-title">Document Title / Client Reference</label>
+                <input type="text" id="doc-title" placeholder="e.g. Acme Corp Automation Setup, Weekly Marketing Review..." class="custom-input">
+              </div>
+              
+              <div class="form-group">
+                <label for="doc-details">Specific Directives & Content Bullet Points</label>
+                <textarea id="doc-details" placeholder="Outline primary data, timeline constraints, billing amounts, or progress milestones to format..." rows="6"></textarea>
+              </div>
+              
+              <button class="btn btn-primary" id="generate-doc-btn">
+                <i data-lucide="file-plus"></i>
+                <span>Generate Formatted Document</span>
+              </button>
+            </div>
+            
+            <div class="panel-preview">
+              <div class="preview-header">
+                <h3>Formatted Preview</h3>
+                <button class="btn-copy" id="copy-doc-btn">
+                  <i data-lucide="copy"></i>
+                  <span>Copy Markdown</span>
+                </button>
+              </div>
+              <div class="preview-content-box" id="doc-output-box">
+                <p class="placeholder-text">Generated project documents, invoices, or weekly reviews will render here.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 5. TASK BOARD (KANBAN) VIEW -->
+        <section class="view-panel" id="view-kanban">
+          <div class="view-header kanban-header">
+            <div>
+              <h2>Autonomous Task Board</h2>
+              <p>Organize workflow items. Add cards using the AI NLP Parser or click Auto-Prioritize.</p>
+            </div>
+            
+            <div class="kanban-actions">
+              <button class="btn btn-secondary" id="kanban-prioritize-btn">
+                <i data-lucide="sliders"></i>
+                <span>AI Auto-Prioritize</span>
+              </button>
+              <button class="btn btn-secondary" id="kanban-clear-btn">
+                <i data-lucide="trash-2"></i>
+                <span>Clear Done</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Natural Language Parsing Bar -->
+          <div class="nlp-parser-bar">
+            <div class="parser-input-wrapper">
+              <i data-lucide="sparkles" class="ai-spark-icon"></i>
+              <input type="text" id="kanban-ai-input" placeholder="Instruction (e.g. Add high priority task to write project specs by Thursday)...">
+            </div>
+            <button class="btn btn-primary" id="kanban-ai-add-btn">
+              <span>Parse & Add Task</span>
+            </button>
+          </div>
+          
+          <!-- Kanban Grid -->
+          <div class="kanban-grid">
+            <!-- TO DO -->
+            <div class="kanban-column" id="col-todo">
+              <div class="col-header">
+                <div class="col-title">
+                  <span class="dot-indicator blue"></span>
+                  <h3>To Do</h3>
+                </div>
+                <span class="card-count" id="count-todo">0</span>
+              </div>
+              <div class="column-cards" id="cards-todo"></div>
+            </div>
+            
+            <!-- IN PROGRESS -->
+            <div class="kanban-column" id="col-inprogress">
+              <div class="col-header">
+                <div class="col-title">
+                  <span class="dot-indicator yellow"></span>
+                  <h3>In Progress</h3>
+                </div>
+                <span class="card-count" id="count-inprogress">0</span>
+              </div>
+              <div class="column-cards" id="cards-inprogress"></div>
+            </div>
+            
+            <!-- PENDING APPROVAL -->
+            <div class="kanban-column" id="col-approval">
+              <div class="col-header">
+                <div class="col-title">
+                  <span class="dot-indicator pink"></span>
+                  <h3>Pending Approval</h3>
+                </div>
+                <span class="card-count" id="count-approval">0</span>
+              </div>
+              <div class="column-cards" id="cards-approval"></div>
+            </div>
+
+            <!-- DONE -->
+            <div class="kanban-column" id="col-done">
+              <div class="col-header">
+                <div class="col-title">
+                  <span class="dot-indicator green"></span>
+                  <h3>Done</h3>
+                </div>
+                <span class="card-count" id="count-done">0</span>
+              </div>
+              <div class="column-cards" id="cards-done"></div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- 6. MINUTES OF MEETING (MoM) VIEW -->
+        <section class="view-panel" id="view-mom">
+          <div class="view-header">
+            <div>
+              <h2>Minutes of Meeting (MoM) Extractor</h2>
+              <p>Paste meeting transcripts or unstructured discussions to extract structured, actionable minutes.</p>
+            </div>
+          </div>
+          
+          <div class="split-layout">
+            <div class="panel-form">
+              <div class="form-group">
+                <label for="mom-transcript">Raw Meeting Transcript / Bullet Notes</label>
+                <textarea id="mom-transcript" placeholder="Paste dialogue transcript or messy brainstorming notes here... (e.g. John: we need to launch by Tuesday. Sarah: I will write the code. Maya: I will handle social media updates)..." rows="12"></textarea>
+              </div>
+              
+              <button class="btn btn-primary" id="generate-mom-btn">
+                <i data-lucide="file-output"></i>
+                <span>Extract Actionable MoM</span>
+              </button>
+            </div>
+            
+            <div class="panel-preview">
+              <div class="preview-header">
+                <h3>Structured MoM Document</h3>
+                <button class="btn-copy" id="copy-mom-btn">
+                  <i data-lucide="copy"></i>
+                  <span>Copy Markdown</span>
+                </button>
+              </div>
+              <div class="preview-content-box" id="mom-output-box">
+                <p class="placeholder-text">Formatted MoM with decisions, owners, and action points will show up here.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. CUSTOMER SUPPORT AGENT VIEW -->
+        <section class="view-panel" id="view-support">
+          <div class="view-header">
+            <div>
+              <h2>AI Customer Support Agent</h2>
+              <p>Instantly handle customer queries with AI-generated responses. Select an industry and type a query to get started.</p>
+            </div>
+          </div>
+
+          <div class="support-layout">
+            <!-- Left: Industry & FAQ Shortcuts -->
+            <div class="support-sidebar">
+              <div class="chat-config-group">
+                <label>Industry</label>
+                <select id="support-industry" class="custom-select">
+                  <option value="general">General / Other</option>
+                  <option value="education">Education</option>
+                  <option value="healthcare">Healthcare</option>
+                  <option value="hr">Human Resources (HR)</option>
+                  <option value="legal">Legal</option>
+                  <option value="manufacturing">Manufacturing</option>
+                  <option value="sales">Sales</option>
+                  <option value="retail">Retail</option>
+                </select>
+              </div>
+
+              <div class="chat-config-group">
+                <label>Quick FAQ Templates</label>
+                <div class="prompt-templates" id="support-faq-chips">
+                  <button class="template-chip" data-support-faq="What are your business hours?">What are your business hours?</button>
+                  <button class="template-chip" data-support-faq="I want to request a refund for my order.">Refund / Return request</button>
+                  <button class="template-chip" data-support-faq="I cannot login to my account. Please help.">Login / Account issue</button>
+                  <button class="template-chip" data-support-faq="How can I track my order status?">Order tracking</button>
+                  <button class="template-chip" data-support-faq="I have a billing discrepancy on my invoice.">Billing dispute</button>
+                  <button class="template-chip" data-support-faq="Can you escalate this to a manager?">Escalate to manager</button>
+                </div>
+              </div>
+
+              <div class="chat-config-group">
+                <label>Tone</label>
+                <select id="support-tone" class="custom-select">
+                  <option value="professional">Professional</option>
+                  <option value="empathetic">Empathetic</option>
+                  <option value="concise">Concise &amp; Direct</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Right: Support Chat Interface -->
+            <div class="chat-container" style="display:flex;flex-direction:column;height:100%">
+              <div class="chat-history" id="support-chat-history" style="flex-grow:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px">
+                <div class="chat-msg system">
+                  <div class="msg-avatar"><i data-lucide="headphones"></i></div>
+                  <div class="msg-content">
+                    <strong>Support Agent ready.</strong> Type a customer query or select a FAQ template to generate an instant AI response. Switch the industry for domain-specific answers.
+                  </div>
+                </div>
+              </div>
+
+              <div class="chat-input-bar">
+                <textarea id="support-input" placeholder="Type a customer query here..." rows="1" style="height:48px"></textarea>
+                <button class="chat-send-btn" id="support-send-btn">
+                  <i data-lucide="send"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8. AI KNOWLEDGE ASSISTANT VIEW -->
+        <section class="view-panel" id="view-knowledge">
+          <div class="view-header">
+            <div>
+              <h2>AI Knowledge Assistant</h2>
+              <p>Build your team's knowledge base. Ask questions and get AI-grounded answers from your stored policies, FAQs, and documents.</p>
+            </div>
+          </div>
+
+          <div class="knowledge-layout">
+
+            <!-- Left: Knowledge Base Manager -->
+            <div class="knowledge-manager">
+
+              <!-- Add New Entry Form -->
+              <div class="knowledge-add-form">
+                <h3 class="knowledge-section-title">
+                  <i data-lucide="plus-circle"></i> Add Knowledge Entry
+                </h3>
+
+                <div class="form-group">
+                  <label for="kb-entry-title">Title / Topic</label>
+                  <input type="text" id="kb-entry-title" class="custom-input" placeholder="e.g. Leave Policy, Refund Process, Onboarding Steps">
+                </div>
+
+                <div class="form-group">
+                  <label for="kb-entry-category">Category</label>
+                  <select id="kb-entry-category" class="custom-select">
+                    <option value="hr">HR Policy</option>
+                    <option value="product">Product / Service FAQ</option>
+                    <option value="training">Training Material</option>
+                    <option value="legal">Legal / Compliance</option>
+                    <option value="finance">Finance &amp; Billing</option>
+                    <option value="it">IT &amp; Technical</option>
+                    <option value="general">General Knowledge</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="kb-entry-content">Content / Details</label>
+                  <textarea id="kb-entry-content" rows="5" placeholder="Paste or type the knowledge content here. The AI will use this to answer related questions accurately."></textarea>
+                </div>
+
+                <button class="btn btn-primary" id="kb-add-btn" style="width:100%">
+                  <i data-lucide="database"></i>
+                  <span>Save to Knowledge Base</span>
+                </button>
+              </div>
+
+              <!-- Stored Entries List -->
+              <div class="knowledge-entries-list">
+                <h3 class="knowledge-section-title" style="margin-top:20px">
+                  <i data-lucide="library"></i> Stored Entries
+                </h3>
+                <div id="kb-entries-container">
+                  <p class="placeholder-text" style="margin-top:20px;font-size:13px">No entries yet. Add your first knowledge document above.</p>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Right: AI Q&A Interface -->
+            <div class="knowledge-qa-panel">
+
+              <!-- Search / Ask Bar -->
+              <div class="kb-search-bar">
+                <div class="parser-input-wrapper" style="flex-grow:1">
+                  <i data-lucide="sparkles" class="ai-spark-icon"></i>
+                  <input type="text" id="kb-query-input" placeholder="Ask anything from your knowledge base... (e.g. What is the leave policy? How do I process a refund?)">
+                </div>
+                <button class="btn btn-primary" id="kb-ask-btn">
+                  <i data-lucide="search"></i>
+                  <span>Ask AI</span>
+                </button>
+              </div>
+
+              <!-- Quick topic chips -->
+              <div class="kb-topic-chips" id="kb-topic-chips">
+                <span class="kb-chip-label">Quick topics:</span>
+                <button class="kb-chip" data-query="What is the leave policy?">🗓️ Leave Policy</button>
+                <button class="kb-chip" data-query="How do I request a refund?">💳 Refund Process</button>
+                <button class="kb-chip" data-query="What are the onboarding steps for new employees?">👤 Onboarding</button>
+                <button class="kb-chip" data-query="What are the IT security guidelines?">🔒 IT Security</button>
+                <button class="kb-chip" data-query="Summarize all stored knowledge entries">📋 Summarize All</button>
+              </div>
+
+              <!-- Q&A Results Area -->
+              <div class="kb-answer-area" id="kb-answer-area">
+                <div class="kb-empty-state">
+                  <i data-lucide="brain-circuit" style="width:48px;height:48px;color:var(--accent-primary);opacity:0.4"></i>
+                  <h3>Ask your Knowledge Base anything</h3>
+                  <p>Add knowledge entries on the left, then ask questions here. The AI will answer using only your stored content, giving you grounded, accurate responses with source references.</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+  
+  <!-- SETTINGS MODAL -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>System Configuration & API Settings</h3>
+        <button class="modal-close" id="close-settings-btn">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <p class="modal-intro-text">Configure API keys for active live workspace assistance. Keys are securely stored in your browser's local storage and never sent elsewhere.</p>
+        
+        <div class="form-group">
+          <label for="settings-model">Gemini Model Target</label>
+          <select id="settings-model" class="custom-select">
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash (Fast, Recommended)</option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro (Analytical)</option>
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Standard Legacy)</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="settings-api-key">Google Gemini API Key</label>
+          <div class="key-input-wrapper">
+            <input type="password" id="settings-api-key" class="custom-input" placeholder="AIzaSy...">
+            <button class="toggle-key-btn" id="toggle-key-visibility">
+              <i data-lucide="eye"></i>
+            </button>
+          </div>
+          <span class="help-subtext">Leave empty to run in Simulated Mode (generates local mockup responses instantly).</span>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancel-settings-btn">Cancel</button>
+        <button class="btn btn-primary" id="save-settings-btn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+  
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

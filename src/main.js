@@ -1,4 +1,5 @@
 import { queryAI, getSavedApiKey, saveApiKey, getSavedModel, saveModel } from './ai.js';
+import { authService, dbService } from './supabase.js';
 
 // Application State
 let chatHistory = [
@@ -15,6 +16,8 @@ let metricsState = {
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
+  initAuth();
+
   // Clear any stale metric values from previous sessions so counters start from 0
   localStorage.removeItem('metrics_timeSaved');
   localStorage.removeItem('metrics_tasksExecuted');
@@ -109,10 +112,19 @@ function initSettings() {
   const modelSelect = document.getElementById('settings-model');
   const toggleVisibilityBtn = document.getElementById('toggle-key-visibility');
 
+  const supabaseUrlInput = document.getElementById('settings-supabase-url');
+  const supabaseAnonKeyInput = document.getElementById('settings-supabase-anon-key');
+  const toggleSupabaseVisibilityBtn = document.getElementById('toggle-supabase-key-visibility');
+
   // Open
   openBtn.addEventListener('click', () => {
     apiKeyInput.value = getSavedApiKey();
     modelSelect.value = getSavedModel();
+
+    const sbConfig = authService.getSupabaseConfig();
+    supabaseUrlInput.value = sbConfig.url || '';
+    supabaseAnonKeyInput.value = sbConfig.anonKey || '';
+
     modal.classList.add('active');
   });
 
@@ -130,12 +142,31 @@ function initSettings() {
     if (window.lucide) window.lucide.createIcons();
   });
 
+  toggleSupabaseVisibilityBtn.addEventListener('click', () => {
+    const isPassword = supabaseAnonKeyInput.type === 'password';
+    supabaseAnonKeyInput.type = isPassword ? 'text' : 'password';
+    const iconName = isPassword ? 'eye-off' : 'eye';
+    toggleSupabaseVisibilityBtn.innerHTML = `<i data-lucide="${iconName}"></i>`;
+    if (window.lucide) window.lucide.createIcons();
+  });
+
   // Save Settings
   saveBtn.addEventListener('click', () => {
     saveApiKey(apiKeyInput.value.trim());
     saveModel(modelSelect.value);
+
+    authService.saveSupabaseConfig({
+      url: supabaseUrlInput.value.trim(),
+      anonKey: supabaseAnonKeyInput.value.trim()
+    });
+
     closeModal();
     updateSystemStatus();
+    showToast('Settings Saved', 'System configuration updated successfully. Reloading page to apply database connections...', 'success');
+    
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
   });
 }
 
@@ -513,22 +544,41 @@ function initKanban() {
   const prioritizeBtn = document.getElementById('kanban-prioritize-btn');
   const clearBtn = document.getElementById('kanban-clear-btn');
 
-  // Load from local storage or set defaults
-  const storedCards = localStorage.getItem('nexus_copilot_kanban_cards');
-  if (storedCards) {
-    kanbanCards = JSON.parse(storedCards);
-  } else {
-    kanbanCards = [
-      { id: 1, title: 'Draft newsletter update on workspace tools', column: 'todo', priority: 'medium', dueDate: 'Tuesday' },
-      { id: 2, title: 'Extract minutes from marketing align sync', column: 'in-progress', priority: 'high', dueDate: 'Wednesday' },
-      { id: 3, title: 'Generate service invoice for Acme review', column: 'done', priority: 'low', dueDate: 'Completed' }
-    ];
-    saveKanbanCards();
+  // Load cards asynchronously
+  const loadCards = async () => {
+    const user = authService.getCurrentUser();
+    if (user) {
+      kanbanCards = await dbService.loadKanban(user.uid);
+    } else {
+      const storedCards = localStorage.getItem('nexus_copilot_kanban_cards');
+      if (storedCards) {
+        kanbanCards = JSON.parse(storedCards);
+      } else {
+        kanbanCards = [
+          { id: 1, title: 'Draft newsletter update on workspace tools', column: 'todo', priority: 'medium', dueDate: 'Tuesday' },
+          { id: 2, title: 'Extract minutes from marketing align sync', column: 'in-progress', priority: 'high', dueDate: 'Wednesday' },
+          { id: 3, title: 'Generate service invoice for Acme review', column: 'done', priority: 'low', dueDate: 'Completed' }
+        ];
+        await saveKanbanCards();
+      }
+    }
+    renderKanban();
+  };
+
+  async function saveKanbanCards() {
+    const user = authService.getCurrentUser();
+    if (user) {
+      await dbService.saveKanban(user.uid, kanbanCards);
+    } else {
+      localStorage.setItem('nexus_copilot_kanban_cards', JSON.stringify(kanbanCards));
+    }
   }
 
-  function saveKanbanCards() {
-    localStorage.setItem('nexus_copilot_kanban_cards', JSON.stringify(kanbanCards));
-  }
+  window.refreshKanban = async () => {
+    await loadCards();
+  };
+
+  loadCards();
 
   function renderKanban() {
     if (colTodo) colTodo.innerHTML = '';
@@ -1248,18 +1298,39 @@ function initKnowledgeAssistant() {
 
   if (!addBtn || !askBtn) return;
 
-  let knowledgeBase = JSON.parse(localStorage.getItem('nexus_knowledge_base') || '[]');
+  let knowledgeBase = [];
 
-  if (knowledgeBase.length === 0) {
-    knowledgeBase = [
-      { id: Date.now()+1, title: 'Annual Leave Policy', category: 'hr', content: 'Employees are entitled to 21 days of annual leave per calendar year. Leave must be applied at least 7 days in advance via the HR portal. Unused leave up to 10 days can be carried forward. Emergency leave (up to 3 days) can be taken without prior notice with manager approval. Maternity leave is 26 weeks and paternity leave is 2 weeks, both fully paid.' },
-      { id: Date.now()+2, title: 'Refund & Returns Process', category: 'product', content: 'Customers can request a refund within 30 days of purchase. Steps: 1) Log in to the customer portal, 2) Go to My Orders, 3) Click Request Refund, 4) Choose a reason and submit. Refunds are processed within 5-7 business days. For physical products, a return shipment label will be emailed within 24 hours.' },
-      { id: Date.now()+3, title: 'New Employee Onboarding Checklist', category: 'training', content: 'Week 1: Complete HR paperwork, set up workstation, attend orientation. Week 2: Shadow team lead, access credentials, complete compliance training. Week 3: Begin assigned project tasks, set 90-day goals with manager. Key contacts: IT Helpdesk ext 101, HR Manager ext 202. All new hires must complete cybersecurity training within 5 days.' }
-    ];
-    saveKB();
+  const loadKnowledge = async () => {
+    const user = authService.getCurrentUser();
+    if (user) {
+      knowledgeBase = await dbService.loadKnowledge(user.uid);
+    } else {
+      knowledgeBase = JSON.parse(localStorage.getItem('nexus_knowledge_base') || '[]');
+      if (knowledgeBase.length === 0) {
+        knowledgeBase = [
+          { id: Date.now()+1, title: 'Annual Leave Policy', category: 'hr', content: 'Employees are entitled to 21 days of annual leave per calendar year. Leave must be applied at least 7 days in advance via the HR portal. Unused leave up to 10 days can be carried forward. Emergency leave (up to 3 days) can be taken without prior notice with manager approval. Maternity leave is 26 weeks and paternity leave is 2 weeks, both fully paid.' },
+          { id: Date.now()+2, title: 'Refund & Returns Process', category: 'product', content: 'Customers can request a refund within 30 days of purchase. Steps: 1) Log in to the customer portal, 2) Go to My Orders, 3) Click Request Refund, 4) Choose a reason and submit. Refunds are processed within 5-7 business days. For physical products, a return shipment label will be emailed within 24 hours.' },
+          { id: Date.now()+3, title: 'New Employee Onboarding Checklist', category: 'training', content: 'Week 1: Complete HR paperwork, set up workstation, attend orientation. Week 2: Shadow team lead, access credentials, complete compliance training. Week 3: Begin assigned project tasks, set 90-day goals with manager. Key contacts: IT Helpdesk ext 101, HR Manager ext 202. All new hires must complete cybersecurity training within 5 days.' }
+        ];
+        await saveKB();
+      }
+    }
+    renderEntries();
+  };
+
+  async function saveKB() {
+    const user = authService.getCurrentUser();
+    if (user) {
+      await dbService.saveKnowledge(user.uid, knowledgeBase);
+    } else {
+      localStorage.setItem('nexus_knowledge_base', JSON.stringify(knowledgeBase));
+    }
   }
 
-  function saveKB() { localStorage.setItem('nexus_knowledge_base', JSON.stringify(knowledgeBase)); }
+  window.refreshKnowledge = async () => {
+    await loadKnowledge();
+  };
+
 
   const catLabels = { hr:'HR Policy', product:'Product FAQ', training:'Training', legal:'Legal', finance:'Finance', it:'IT & Tech', general:'General' };
   const catColors = { hr:'#8b5cf6', product:'#06b6d4', training:'#34d399', legal:'#f87171', finance:'#fbbf24', it:'#38bdf8', general:'#9b94c0' };
@@ -1335,5 +1406,268 @@ function initKnowledgeAssistant() {
   topicChips.forEach(chip => { chip.addEventListener('click', () => { const q=chip.getAttribute('data-query'); if(q) ask(q); }); });
   askBtn.addEventListener('click', () => { if(queryInput?.value.trim()) ask(queryInput.value.trim()); });
   queryInput?.addEventListener('keydown', e => { if(e.key==='Enter' && queryInput.value.trim()) ask(queryInput.value.trim()); });
-  renderEntries();
+  loadKnowledge();
+}
+
+/**
+ * ==========================================================================
+ * AUTHENTICATION SYSTEM MANAGEMENT (FIREBASE & SIMULATED)
+ * ==========================================================================
+ */
+
+function initAuth() {
+  const loginContainer = document.getElementById('login-container');
+  const appContainer = document.getElementById('app-container');
+  const signinForm = document.getElementById('signin-form');
+  const signupForm = document.getElementById('signup-form');
+  const btnShowSignin = document.getElementById('btn-show-signin');
+  const btnShowSignup = document.getElementById('btn-show-signup');
+  const btnForgotPassword = document.getElementById('btn-forgot-password');
+  const btnGoogleAuth = document.getElementById('btn-google-auth');
+  
+  const signinEmail = document.getElementById('signin-email');
+  const signinPassword = document.getElementById('signin-password');
+  const signupName = document.getElementById('signup-name');
+  const signupEmail = document.getElementById('signup-email');
+  const signupPassword = document.getElementById('signup-password');
+  
+  const signinSpinner = document.getElementById('signin-spinner');
+  const signupSpinner = document.getElementById('signup-spinner');
+  
+
+
+  // Toggle Forms
+  btnShowSignin.addEventListener('click', () => {
+    btnShowSignin.classList.add('active');
+    btnShowSignup.classList.remove('active');
+    signinForm.classList.add('active');
+    signupForm.classList.remove('active');
+  });
+
+  btnShowSignup.addEventListener('click', () => {
+    btnShowSignup.classList.add('active');
+    btnShowSignin.classList.remove('active');
+    signupForm.classList.add('active');
+    signinForm.classList.remove('active');
+  });
+
+  // Handle Sign In Submit
+  signinForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = signinEmail.value.trim();
+    const password = signinPassword.value;
+    
+    signinSpinner.style.display = 'inline-block';
+    const submitBtn = document.getElementById('btn-signin-submit');
+    submitBtn.disabled = true;
+    
+    try {
+      await authService.signIn(email, password);
+      showToast('Welcome Back!', 'Login successful.', 'success');
+    } catch (error) {
+      console.error(error);
+      const userMessage = getAuthErrorMessage(error.message);
+      showToast('Login Failed', userMessage, 'error');
+    } finally {
+      signinSpinner.style.display = 'none';
+      submitBtn.disabled = false;
+    }
+  });
+
+  // Handle Sign Up Submit
+  signupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = signupName.value.trim();
+    const email = signupEmail.value.trim();
+    const password = signupPassword.value;
+    
+    signupSpinner.style.display = 'inline-block';
+    const submitBtn = document.getElementById('btn-signup-submit');
+    submitBtn.disabled = true;
+    
+    try {
+      await authService.signUp(email, password, name);
+      showToast('Account Created!', `Welcome to Nexus Copilot, ${name}.`, 'success');
+    } catch (error) {
+      console.error(error);
+      const userMessage = getAuthErrorMessage(error.message);
+      showToast('Registration Failed', userMessage, 'error');
+    } finally {
+      signupSpinner.style.display = 'none';
+      submitBtn.disabled = false;
+    }
+  });
+
+  // Handle Forgot Password
+  btnForgotPassword.addEventListener('click', async () => {
+    const email = signinEmail.value.trim();
+    if (!email) {
+      showToast('Email Required', 'Please enter your email address in the Sign In form first.', 'error');
+      signinEmail.focus();
+      return;
+    }
+    
+    try {
+      await authService.resetPassword(email);
+      showToast('Reset Link Sent', 'Check your inbox for password reset instructions.', 'success');
+    } catch (error) {
+      console.error(error);
+      const userMessage = getAuthErrorMessage(error.message);
+      showToast('Reset Failed', userMessage, 'error');
+    }
+  });
+
+  // Handle Google Auth Sign In
+  btnGoogleAuth.addEventListener('click', async () => {
+    btnGoogleAuth.disabled = true;
+    const span = btnGoogleAuth.querySelector('span');
+    const originalText = span.textContent;
+    span.textContent = 'Connecting...';
+    
+    try {
+      await authService.signInWithGoogle();
+      showToast('Welcome!', 'Google Sign In successful.', 'success');
+    } catch (error) {
+      console.error(error);
+      const userMessage = getAuthErrorMessage(error.message);
+      showToast('Google Sign In Failed', userMessage, 'error');
+    } finally {
+      span.textContent = originalText;
+      btnGoogleAuth.disabled = false;
+    }
+  });
+
+  // Profile Dropdown Actions
+  const profileMenu = document.getElementById('user-profile-menu');
+  const profileDropdown = document.getElementById('profile-dropdown');
+  const logoutBtn = document.getElementById('logout-btn');
+  
+  profileMenu.addEventListener('click', (e) => {
+    e.stopPropagation();
+    profileMenu.classList.toggle('active');
+    profileDropdown.classList.toggle('active');
+  });
+
+  document.addEventListener('click', () => {
+    profileMenu.classList.remove('active');
+    profileDropdown.classList.remove('active');
+  });
+
+  logoutBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    try {
+      await authService.signOut();
+      showToast('Signed Out', 'You have been logged out successfully.', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Sign Out Failed', 'An error occurred during logout.', 'error');
+    }
+  });
+
+
+
+  // Subscribe to Auth State
+  authService.onAuthStateChanged((user) => {
+    if (user) {
+      // Logged In
+      loginContainer.style.display = 'none';
+      appContainer.style.display = 'grid';
+      
+      // Update UI with user info
+      const displayName = user.displayName || user.email.split('@')[0];
+      const email = user.email;
+      
+      document.getElementById('user-display-name').textContent = displayName;
+      document.getElementById('dropdown-user-name').textContent = displayName;
+      document.getElementById('dropdown-user-email').textContent = email;
+      
+      // Initials for avatar
+      const initials = displayName
+        .split(' ')
+        .map(n => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase() || 'US';
+      document.getElementById('user-avatar').textContent = initials;
+      
+      // Adjust dashboard welcome message
+      const highlight = document.querySelector('.welcome-banner .highlight');
+      if (highlight) {
+        highlight.textContent = displayName;
+      }
+      
+    } else {
+      // Logged Out
+      loginContainer.style.display = 'flex';
+      appContainer.style.display = 'none';
+    }
+    
+    // Refresh user data (Kanban & Knowledge base) whenever auth state resolves/changes
+    if (typeof window.refreshKanban === 'function') {
+      window.refreshKanban();
+    }
+    if (typeof window.refreshKnowledge === 'function') {
+      window.refreshKnowledge();
+    }
+    
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  });
+}
+
+function getAuthErrorMessage(msg) {
+  if (msg.includes('auth/user-not-found')) return 'No account found with this email.';
+  if (msg.includes('auth/wrong-password')) return 'The password you entered is incorrect.';
+  if (msg.includes('auth/invalid-email')) return 'Please enter a valid email address.';
+  if (msg.includes('auth/email-already-in-use')) return 'This email address is already in use.';
+  if (msg.includes('auth/weak-password')) return 'Password should be at least 6 characters.';
+  if (msg.includes('auth/popup-closed-by-user')) return 'The login popup was closed before completing.';
+  return msg.split(': ').pop() || 'An error occurred during authentication.';
+}
+
+/**
+ * Toast Notifications
+ */
+function showToast(title, message, type = 'info') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+  }
+  
+  const toast = document.createElement('div');
+  toast.className = `toast-notification ${type}`;
+  
+  let icon = 'info';
+  if (type === 'success') icon = 'check-circle';
+  if (type === 'error') icon = 'alert-triangle';
+  
+  toast.innerHTML = `
+    <i data-lucide="${icon}"></i>
+    <div class="toast-content">
+      <h5>${title}</h5>
+      <p>${message}</p>
+    </div>
+  `;
+  
+  container.appendChild(toast);
+  
+  if (window.lucide) {
+    window.lucide.createIcons({
+      attrs: { class: 'toast-icon' }
+    });
+  }
+  
+  setTimeout(() => {
+    toast.classList.add('active');
+  }, 10);
+  
+  setTimeout(() => {
+    toast.classList.remove('active');
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  }, 4000);
 }

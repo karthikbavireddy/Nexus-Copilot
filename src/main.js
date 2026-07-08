@@ -118,12 +118,13 @@ function initSettings() {
 
   // Open
   openBtn.addEventListener('click', () => {
-    apiKeyInput.value = getSavedApiKey();
+    const savedApiKey = getSavedApiKey();
+    apiKeyInput.value = savedApiKey ? '••••••••••••••••' : '';
     modelSelect.value = getSavedModel();
 
     const sbConfig = authService.getSupabaseConfig();
     supabaseUrlInput.value = sbConfig.url || '';
-    supabaseAnonKeyInput.value = sbConfig.anonKey || '';
+    supabaseAnonKeyInput.value = sbConfig.anonKey ? '••••••••••••••••' : '';
 
     modal.classList.add('active');
   });
@@ -133,31 +134,48 @@ function initSettings() {
   closeBtn.addEventListener('click', closeModal);
   cancelBtn.addEventListener('click', closeModal);
   
-  // Toggle visibility
-  toggleVisibilityBtn.addEventListener('click', () => {
-    const isPassword = apiKeyInput.type === 'password';
-    apiKeyInput.type = isPassword ? 'text' : 'password';
-    const iconName = isPassword ? 'eye-off' : 'eye';
-    toggleVisibilityBtn.innerHTML = `<i data-lucide="${iconName}"></i>`;
-    if (window.lucide) window.lucide.createIcons();
-  });
+  // Toggle visibility (Safe checks in case buttons are removed)
+  if (toggleVisibilityBtn) {
+    toggleVisibilityBtn.addEventListener('click', () => {
+      const isPassword = apiKeyInput.type === 'password';
+      apiKeyInput.type = isPassword ? 'text' : 'password';
+      const iconName = isPassword ? 'eye-off' : 'eye';
+      toggleVisibilityBtn.innerHTML = `<i data-lucide="${iconName}"></i>`;
+      if (window.lucide) window.lucide.createIcons();
+    });
+  }
 
-  toggleSupabaseVisibilityBtn.addEventListener('click', () => {
-    const isPassword = supabaseAnonKeyInput.type === 'password';
-    supabaseAnonKeyInput.type = isPassword ? 'text' : 'password';
-    const iconName = isPassword ? 'eye-off' : 'eye';
-    toggleSupabaseVisibilityBtn.innerHTML = `<i data-lucide="${iconName}"></i>`;
-    if (window.lucide) window.lucide.createIcons();
-  });
+  if (toggleSupabaseVisibilityBtn) {
+    toggleSupabaseVisibilityBtn.addEventListener('click', () => {
+      const isPassword = supabaseAnonKeyInput.type === 'password';
+      supabaseAnonKeyInput.type = isPassword ? 'text' : 'password';
+      const iconName = isPassword ? 'eye-off' : 'eye';
+      toggleSupabaseVisibilityBtn.innerHTML = `<i data-lucide="${iconName}"></i>`;
+      if (window.lucide) window.lucide.createIcons();
+    });
+  }
 
   // Save Settings
   saveBtn.addEventListener('click', () => {
-    saveApiKey(apiKeyInput.value.trim());
+    const newApiKey = apiKeyInput.value.trim();
+    if (newApiKey !== '••••••••••••••••') {
+      saveApiKey(newApiKey);
+    }
+    
     saveModel(modelSelect.value);
 
+    const sbConfig = authService.getSupabaseConfig();
+    const newSbUrl = supabaseUrlInput.value.trim();
+    const newSbAnonKey = supabaseAnonKeyInput.value.trim();
+    
+    let finalAnonKey = sbConfig.anonKey;
+    if (newSbAnonKey !== '••••••••••••••••') {
+      finalAnonKey = newSbAnonKey;
+    }
+
     authService.saveSupabaseConfig({
-      url: supabaseUrlInput.value.trim(),
-      anonKey: supabaseAnonKeyInput.value.trim()
+      url: newSbUrl,
+      anonKey: finalAnonKey
     });
 
     closeModal();

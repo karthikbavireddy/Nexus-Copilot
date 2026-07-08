@@ -112,19 +112,12 @@ function initSettings() {
   const modelSelect = document.getElementById('settings-model');
   const toggleVisibilityBtn = document.getElementById('toggle-key-visibility');
 
-  const supabaseUrlInput = document.getElementById('settings-supabase-url');
-  const supabaseAnonKeyInput = document.getElementById('settings-supabase-anon-key');
-  const toggleSupabaseVisibilityBtn = document.getElementById('toggle-supabase-key-visibility');
 
   // Open
   openBtn.addEventListener('click', () => {
     const savedApiKey = getSavedApiKey();
     apiKeyInput.value = savedApiKey ? '••••••••••••••••' : '';
     modelSelect.value = getSavedModel();
-
-    const sbConfig = authService.getSupabaseConfig();
-    supabaseUrlInput.value = sbConfig.url || '';
-    supabaseAnonKeyInput.value = sbConfig.anonKey ? '••••••••••••••••' : '';
 
     modal.classList.add('active');
   });
@@ -145,16 +138,6 @@ function initSettings() {
     });
   }
 
-  if (toggleSupabaseVisibilityBtn) {
-    toggleSupabaseVisibilityBtn.addEventListener('click', () => {
-      const isPassword = supabaseAnonKeyInput.type === 'password';
-      supabaseAnonKeyInput.type = isPassword ? 'text' : 'password';
-      const iconName = isPassword ? 'eye-off' : 'eye';
-      toggleSupabaseVisibilityBtn.innerHTML = `<i data-lucide="${iconName}"></i>`;
-      if (window.lucide) window.lucide.createIcons();
-    });
-  }
-
   // Save Settings
   saveBtn.addEventListener('click', () => {
     const newApiKey = apiKeyInput.value.trim();
@@ -164,23 +147,9 @@ function initSettings() {
     
     saveModel(modelSelect.value);
 
-    const sbConfig = authService.getSupabaseConfig();
-    const newSbUrl = supabaseUrlInput.value.trim();
-    const newSbAnonKey = supabaseAnonKeyInput.value.trim();
-    
-    let finalAnonKey = sbConfig.anonKey;
-    if (newSbAnonKey !== '••••••••••••••••') {
-      finalAnonKey = newSbAnonKey;
-    }
-
-    authService.saveSupabaseConfig({
-      url: newSbUrl,
-      anonKey: finalAnonKey
-    });
-
     closeModal();
     updateSystemStatus();
-    showToast('Settings Saved', 'System configuration updated successfully. Reloading page to apply database connections...', 'success');
+    showToast('Settings Saved', 'System configuration updated successfully. Reloading page...', 'success');
     
     setTimeout(() => {
       window.location.reload();

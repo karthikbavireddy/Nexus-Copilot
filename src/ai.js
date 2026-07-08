@@ -1,3 +1,6 @@
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { SystemMessage, HumanMessage } from "@langchain/core/messages";
+
 /**
  * AI Connection and Simulation Core
  */
@@ -23,50 +26,22 @@ export function saveModel(model) {
 }
 
 /**
- * Call the live Gemini API using fetch
+ * Call the live Gemini API using LangChain
  */
 async function callGeminiAPI(apiKey, model, systemInstruction, prompt) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-  
-  const requestBody = {
-    contents: [
-      {
-        parts: [
-          { text: prompt }
-        ]
-      }
-    ]
-  };
-
-  if (systemInstruction) {
-    requestBody.systemInstruction = {
-      parts: [
-        { text: systemInstruction }
-      ]
-    };
-  }
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(requestBody)
+  const chat = new ChatGoogleGenerativeAI({
+    model: model || "gemini-2.5-flash",
+    apiKey: apiKey,
   });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const message = errorData.error?.message || `HTTP error! status: ${response.status}`;
-    throw new Error(message);
+  const messages = [];
+  if (systemInstruction) {
+    messages.push(new SystemMessage(systemInstruction));
   }
+  messages.push(new HumanMessage(prompt));
 
-  const data = await response.json();
-  const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!textResponse) {
-    throw new Error('Invalid response structure received from Gemini API.');
-  }
-
-  return textResponse;
+  const response = await chat.invoke(messages);
+  return response.content;
 }
 
 /**

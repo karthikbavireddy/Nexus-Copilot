@@ -149,10 +149,18 @@ const simulatedAuth = {
 
   signInWithGoogle: async () => {
     await new Promise(resolve => setTimeout(resolve, 800));
+    const lastName = localStorage.getItem('nexus_simulated_google_name') || 'B.Karthikeya';
+    let name = prompt("Google Auth is simulated. Enter display name to use:", lastName);
+    if (name === null) {
+      throw new Error("auth/popup-closed-by-user: Login cancelled by user");
+    }
+    name = name.trim() || "Google User";
+    localStorage.setItem('nexus_simulated_google_name', name);
+
     const loggedInUser = {
       uid: 'sim_google_' + Math.random().toString(36).substr(2, 9),
-      email: 'google.user@example.com',
-      displayName: 'Google User',
+      email: name.toLowerCase().replace(/[^a-z0-9]/g, '.') + '@example.com',
+      displayName: name,
       emailVerified: true
     };
     simulatedAuth.currentUser = loggedInUser;
@@ -165,10 +173,11 @@ const simulatedAuth = {
 // Map Supabase User to unified user structure
 function mapSupabaseUser(sbUser) {
   if (!sbUser) return null;
+  const meta = sbUser.user_metadata || {};
   return {
     uid: sbUser.id,
     email: sbUser.email,
-    displayName: sbUser.user_metadata?.display_name || sbUser.email.split('@')[0],
+    displayName: meta.display_name || meta.full_name || meta.name || meta.given_name || sbUser.email.split('@')[0],
     emailVerified: !!sbUser.email_confirmed_at
   };
 }
